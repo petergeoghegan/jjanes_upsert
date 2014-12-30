@@ -35,11 +35,13 @@ forget all the rest of the stuff from my test platform.
 
 So:
 
+```
 pg_ctl stop -D /tmp/data2; rm /tmp/data2 -r;
 ../torn_bisect/bin/pg_ctl initdb -D /tmp/data2;
 ../torn_bisect/bin/pg_ctl start -D /tmp/data2 -o "--fsync=off" -w ;
 createdb;
 perl count_upsert.pl 8 100000
+```
 
 A run of count_upsert.pl 8 100000 takes about 30 seconds on my machine (8
 core), and if it doesn't create a problem then I just destroy the database and
@@ -53,6 +55,7 @@ logging targeted to this particular issue.
 
 The problem shows up like this:
 
+```
 init done at count_upsert.pl line 97.
 sum is 1036
 count is 9720
@@ -62,6 +65,7 @@ seq scan doesn't match index scan  1535 == 1535 and 1 == 6 $VAR1 = [
             -21
           ],
 .....
+```
 (Thousands of more lines, as it outputs the entire table twice, once gathered
 by seq scan, once by bitmap index scan).
 
@@ -88,9 +92,11 @@ initdb.
 By the way, I also got a new error message a few times that I think might be a
 manifestation of the same thing:
 
+```
 ERROR:  duplicate key value violates unique constraint "foo_index_idx"
 DETAIL:  Key (index)=(6106) already exists.
 STATEMENT:  insert into foo (index, count) values ($2,$1) on conflict
 (index)
                       update set count=TARGET.count + EXCLUDED.count
 returning foo.count
+```
