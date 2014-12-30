@@ -21,6 +21,9 @@ on_error() {
 trap 'on_exit' USR2;
 trap 'on_exit' INT;
 
+# Unlimited sized core dumps
+ulimit -c unlimited
+
 $INST/bin/pg_ctl -D $TMPDATA stop -m immediate -w
 rm -r $TMPDATA
 $INST/bin/initdb -k -D $TMPDATA || exit
