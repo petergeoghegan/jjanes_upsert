@@ -1,6 +1,6 @@
 use strict;
 use warnings;
-use DBI; 
+use DBI;
 use IO::Pipe;
 use Storable;
 use Data::Dumper;
@@ -8,8 +8,8 @@ use List::Util qw(shuffle);
 
 ## This is a stress tester for PostgreSQL crash recovery.
 
-## It spawns a number of processes which all connect to the database 
-## and madly update a table until either the server crashes, or 
+## It spawns a number of processes which all connect to the database
+## and madly update a table until either the server crashes, or
 ## for a million updates (per process).
 
 ## Upon crash, each Perl process reports up to the parent how many times each value was updated
@@ -32,12 +32,12 @@ use List::Util qw(shuffle);
 ## This generates a lot of logging info.  The tension here is that if you generate too much
 ## info, it is hard to find anomalies in the log file.  But if you generate too little info,
 ## then once you do find anomalies you can't figure out the cause.  So I error on the side
-## of logging too much, and use command lines (memorialized below) to pull out the most 
-## interesting things.  
+## of logging too much, and use command lines (memorialized below) to pull out the most
+## interesting things.
 
-## But with really high logging, the lines in the log file start 
+## But with really high logging, the lines in the log file start
 ## getting garbled up, so back off a bit.  The commented out warn and elog things in this file
-## and the patch file show places where I previously needed logging for debugging specific things, 
+## and the patch file show places where I previously needed logging for debugging specific things,
 ## but decided I don't need it all of the time.  Leave the commented code as landmark for the future.
 
 ## look for odd messages in log file that originate from Perl
@@ -156,10 +156,11 @@ if (@child_pipe) {
   };
   die "Database didn't recover even after 5 minutes, giving up" unless $dat2;
   ## don't do sorts in SQL because it might change the execution plan
+  my $keep = Dumper($dat,$dat2);
   @$dat=sort {$a->[0]<=>$b->[0]} @$dat;
   @$dat2=sort {$a->[0]<=>$b->[0]} @$dat2;
   foreach (@$dat) {
-    $_->[0] == $dat2->[0][0] and $_->[1] == $dat2->[0][1] or die "seq scan doesn't match index scan"; shift @$dat2;
+    $_->[0] == $dat2->[0][0] and $_->[1] == $dat2->[0][1] or die "seq scan doesn't match index scan  $_->[0] == $dat2->[0][0] and $_->[1] == $dat2->[0][1] $keep"; shift @$dat2;
     no warnings 'uninitialized';
     warn "For $_->[0], $_->[1] != $count{$_->[0]}", exists $in_flight{$_->[0]}? " in flight":""  if $_->[1] != $count{$_->[0]};
     if ($_->[1] != $count{$_->[0]} and not exists $in_flight{$_->[0]} and defined $ARGV[2]) {
@@ -204,10 +205,10 @@ eval {
     $abs++;
   };
   $@ =~ s/\n/\\n /g if defined $@;
-  warn "child exit ", $dbh->state(), " $@" if defined $@;
+  warn "child exit ", $dbh->state(), " $@" if length $@;
 };
 $@ =~ s/\n/\\n /g if defined $@;
-warn "child abnormal exit $@" if defined $@;
+warn "child abnormal exit $@" if length $@;
 
 Storable::nstore_fd([$i,\%h,$abs],$pipe_up);
 close $pipe_up or die "$! $?";
