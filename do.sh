@@ -1,7 +1,7 @@
 echo $HOSTNAME
 
 TMPDATA=/tmp/data2
-INST=/home/jjanes/pgsql/torn_bisect/
+INST=/home/pg/pgsql/
 
 on_exit() {
   echo "Cleaning up"
@@ -44,13 +44,13 @@ log_autovacuum_min_duration=0
 autovacuum_naptime = 10s
 log_line_prefix = '%p %i %m:'
 restart_after_crash = on
-## Since we crash the PG software, not the OS, fsync does not matter as the surviving OS is obligated to provide a 
-## consistent view of the written-but-not-fsynced data even after PG restarts.  Turning it off gives more 
+## Since we crash the PG software, not the OS, fsync does not matter as the surviving OS is obligated to provide a
+## consistent view of the written-but-not-fsynced data even after PG restarts.  Turning it off gives more
 ## testing per unit of time.
 fsync=off
 log_error_verbosity = verbose
 JJ_vac=1
-shared_preload_libraries = 'pg_stat_statements' 
+shared_preload_libraries = 'pg_stat_statements'
 END
 
 ## the extra verbosity is often just annoying, turn it off when not needed.
@@ -72,18 +72,18 @@ $INST/bin/psql -c 'create extension pageinspect'
 for g in `seq 1 1000` ; do
   $INST/bin/pg_ctl -D $TMPDATA restart -o "--ignore_checksum_failure=0 --JJ_torn_page=6000 --JJ_xid=0" -w
   echo JJ starting loop $g;
-  for f in `seq 1 100`; do 
-    #$INST/bin/psql -c 'SELECT datname, datfrozenxid, age(datfrozenxid) FROM pg_database;'; 
+  for f in `seq 1 100`; do
+    #$INST/bin/psql -c 'SELECT datname, datfrozenxid, age(datfrozenxid) FROM pg_database;';
     ## on_error is needed to preserve database for inspection.  Otherwise autovac will destroy evidence.
-    perl count.pl 8 || on_error; 
+    perl count_upsert.pl 8 || on_error;
   done;
   echo JJ ending loop $g;
   ## give autovac a chance to run to completion
   # need to disable crashing, as sometimes the vacuum itself triggers the crash
   $INST/bin/pg_ctl -D $TMPDATA restart -o "--ignore_checksum_failure=0 --JJ_torn_page=0 --JJ_xid=40" -w || (sleep 5; \
   $INST/bin/pg_ctl -D $TMPDATA restart -o "--ignore_checksum_failure=0 --JJ_torn_page=0 --JJ_xid=40" -w || on_error;)
-  ## trying to get autovac to work in the face of consistent crashing 
-  ## is just too hard, so do manual vacs unless autovac is specifically 
+  ## trying to get autovac to work in the face of consistent crashing
+  ## is just too hard, so do manual vacs unless autovac is specifically
   ## what you are testing.
   $INST/bin/vacuumdb -a -F || on_error;
   ## or sleep a few times in the hope autovac can get it done, if you want to test that.

@@ -59,7 +59,7 @@ sub dbconnect {
 
 my %count;
 
-while (1) { 
+while (1) {
   %count=();
   eval {
     my $dbh = dbconnect();
@@ -67,8 +67,8 @@ while (1) {
          ## But if the table exists, don't pollute the log with errors
          ($dbh->selectrow_array("select count(*) from pg_tables where tablename='foo';"))[0] == 1 and return;
          $dbh->do(<<'END');
-create table foo(index int, count int); 
-create unique index on foo(index); 
+create table foo(index int, count int);
+create unique index on foo(index);
 END
     };
     my $dat = $dbh->selectall_arrayref("select index, count from foo");
@@ -131,10 +131,10 @@ if (@child_pipe) {
   };
   #warn "harvest done";
   my ($dat,$dat2);
-  foreach (1..300) { 
+  foreach (1..300) {
        sleep 1;
        ## used to do just to the connect in the eval loop,
-       ## but sometimes the database crashed again during the 
+       ## but sometimes the database crashed again during the
        ## query, so do it all in the loop
        eval {
          warn "summary attempt $_" if $_>1;
@@ -184,12 +184,12 @@ my $i; # in flight item which is not reported to have been committed
 my $abs; # since increment are now both pos and neg, this is the absolute number of them.
 
 eval {
-  ## do the dbconnect in the eval, in case we crash when some children are not yet 
-  ## up.  The children that fail to connect in the first place still 
+  ## do the dbconnect in the eval, in case we crash when some children are not yet
+  ## up.  The children that fail to connect in the first place still
   ## need to send the empty data to nstore_fd, or else fd_retieve fatals out.
   my $dbh = dbconnect();
   # $dbh->do("SET SESSION synchronous_commit = false");
-  my $sth=$dbh->prepare('insert into foo (index, count) values ($2,$1) on conflict (index) 
+  my $sth=$dbh->prepare('insert into foo (index, count) values ($2,$1) on conflict (index)
               update set count=TARGET.count + EXCLUDED.count returning foo.count');
   my $del=$dbh->prepare('delete from foo where index=? and count=0');
   #my $ins=$dbh->prepare('insert into foo (index, count) values (?,0)');
