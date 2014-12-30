@@ -114,7 +114,7 @@ foreach (1.. ((@ARGV and $ARGV[0]>0) ? $ARGV[0] : 4)) {
 
 if (@child_pipe) {
   #warn "in harvest";
-  my %in_flight; 
+  my %in_flight;
   my $abs;
   ### harvest children data, which consists of the in-flight item, plus a hash with the counts of all confirmed-committed items
   local $/;
