@@ -53,7 +53,7 @@ my $SIZE=10_000;
 
 ## centralize connections to one place, in case we want to point to a remote server or use a password
 sub dbconnect {
-  my $dbh = DBI->connect("dbi:Pg:", "", "", {AutoCommit => 1, RaiseError=>1, PrintError=>0});
+  my $dbh = DBI->connect("dbi:Pg:;host=127.0.0.1", "", "", {AutoCommit => 1, RaiseError=>1, PrintError=>0});
   return $dbh;
 };
 
