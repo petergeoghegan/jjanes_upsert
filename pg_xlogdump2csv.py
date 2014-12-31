@@ -22,7 +22,7 @@ import re
 #     rmgr text not null,
 #     len_rec numeric not null,
 #     len_tot numeric not null,
-#     tx numeric not null,
+#     tx xid not null,
 #     r_lsn pg_lsn,
 #     prev_lsn pg_lsn,
 #     descr text not null
