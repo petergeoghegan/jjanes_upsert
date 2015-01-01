@@ -194,8 +194,13 @@ eval {
   ## need to send the empty data to nstore_fd, or else fd_retieve fatals out.
   my $dbh = dbconnect();
   # $dbh->do("SET SESSION synchronous_commit = false");
+
+  # Use of redundant WHERE clause provides additional assurances that the tuple
+  # locked and updated is actually the correct one.
   my $sth=$dbh->prepare('insert into upsert_race_test (index, count) values ($2,$1) on conflict (index)
-              update set count=TARGET.count + EXCLUDED.count returning upsert_race_test.count, txid_current()');
+              update set count=TARGET.count + EXCLUDED.count
+              where TARGET.index = EXCLUDED.index
+              returning upsert_race_test.count, txid_current()');
   my $del=$dbh->prepare('delete from upsert_race_test where index=? and count=0');
   #my $ins=$dbh->prepare('insert into upsert_race_test (index, count) values (?,0)');
   foreach (1..($ARGV[1]//1e6)) {
