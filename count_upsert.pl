@@ -6,6 +6,10 @@ use Storable;
 use Data::Dumper;
 use List::Util qw(shuffle);
 
+# Timestamps with warnings are useful
+$SIG{__WARN__} = sub { warn sprintf("[%s] ", scalar localtime), @_ };
+$SIG{__DIE__}  = sub { die  sprintf("[%s] ", scalar localtime), @_ };
+
 ## This is a stress tester for PostgreSQL crash recovery.
 
 ## It spawns a number of processes which all connect to the database
@@ -191,7 +195,7 @@ eval {
   my $dbh = dbconnect();
   # $dbh->do("SET SESSION synchronous_commit = false");
   my $sth=$dbh->prepare('insert into foo (index, count) values ($2,$1) on conflict (index)
-              update set count=TARGET.count + EXCLUDED.count returning foo.count');
+              update set count=TARGET.count + EXCLUDED.count returning foo.count, txid_current()');
   my $del=$dbh->prepare('delete from foo where index=? and count=0');
   #my $ins=$dbh->prepare('insert into foo (index, count) values (?,0)');
   foreach (1..($ARGV[1]//1e6)) {
@@ -200,6 +204,7 @@ eval {
     my $count = $dbh->selectall_arrayref($sth,undef,$d,$i);
     @$count == 1 or die "update did not update 1 row: key $i updated '@$count'";
     $del->execute($i) if $count->[0][0]==0;
+    warn "xid was ", $count->[0][1] if ( not length $count->[0][0] );
     $h{$i}+=$d;
     undef $i;
     $abs++;
