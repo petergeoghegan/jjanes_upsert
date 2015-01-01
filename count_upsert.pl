@@ -204,7 +204,7 @@ eval {
     my $count = $dbh->selectall_arrayref($sth,undef,$d,$i);
     @$count == 1 or die "update did not update 1 row: key $i updated '@$count'";
     $del->execute($i) if $count->[0][0]==0;
-    warn "xid was ", $count->[0][1] if ( not length $count->[0][0] );
+    warn "xid of uninitialized count inserter was ", $count->[0][1] if ( not length $count->[0][0] );
     $h{$i}+=$d;
     undef $i;
     $abs++;
