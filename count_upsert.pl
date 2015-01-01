@@ -51,7 +51,7 @@ $SIG{__DIE__}  = sub { die  sprintf("[%s] ", scalar localtime), @_ };
 #grep -P '2014-05|^sum ' do.out |grep -P '^sum' -B1|perl -ne 'my @x=split/PDT/; print $x[0] and next if @x>1; print if /sum/' > ~/jj.txt
 
 ## check consistency between child and parent table: (the 10 here matches the 10 in 'if ($count->[0][0] % 10 == 0)'
-## psql -c 'select abs(id), sum(count) from foo_parent where count>0 group by abs(id) except select abs(p_id), sum(floor(count::float/10)) from foo group by abs(p_id)'
+## psql -c 'select abs(id), sum(count) from upsert_race_test_parent where count>0 group by abs(id) except select abs(p_id), sum(floor(count::float/10)) from upsert_race_test group by abs(p_id)'
 
 my $SIZE=10_000;
 
@@ -69,22 +69,22 @@ while (1) {
     my $dbh = dbconnect();
     eval { ## on multiple times through, the table already exists, just let it fail
          ## But if the table exists, don't pollute the log with errors
-         ($dbh->selectrow_array("select count(*) from pg_tables where tablename='foo';"))[0] == 1 and return;
          $dbh->do(<<'END');
-create table foo(index int, count int);
-create unique index on foo(index);
+drop table if exists upsert_race_test;
+create table upsert_race_test(index int, count int);
+create unique index on upsert_race_test(index);
 END
     };
-    my $dat = $dbh->selectall_arrayref("select index, count from foo");
+    my $dat = $dbh->selectall_arrayref("select index, count from upsert_race_test");
     ## now that we insert on the fly as needed, there is no need
     ## for the 'clean out and init' step
     if (1 or @$dat == $SIZE) {
          $count{$_->[0]}=$_->[1] foreach @$dat;
     } else {
       warn "table not correct size, ", scalar @$dat unless @$dat==0;
-      $dbh->do("truncate foo");
+      $dbh->do("truncate upsert_race_test");
       %count=();
-      my $sth=$dbh->prepare("insert into foo (index, count) values (?,0)");
+      my $sth=$dbh->prepare("insert into upsert_race_test (index, count) values (?,0)");
       $dbh->begin_work();
       $sth->execute($_) foreach 1..$SIZE;
       $dbh->commit();
@@ -92,7 +92,7 @@ END
     ## even the pause every 100 rounds to let autovac do its things is not enough
     ## because the autovac itself generates enough IO to trigger crashes so that it never completes,
     ## lead to wrap around shut down.  This should keep the vaccum load low enough to complete, at least some times
-    ## $dbh->do("vacuum foo") if rand()<0.1;
+    ## $dbh->do("vacuum upsert_race_test") if rand()<0.1;
   };
   last unless $@;
   warn "Failed with $@, trying again";
@@ -146,14 +146,14 @@ if (@child_pipe) {
          ## detect wrap around shutdown (actually not shutdown, but read-onlyness) and bail out
          ## need to detect before $dat is set, or else it won't trigger a Perl fatal error.
          $dbh->do("create temporary table aldjf (x serial)");
-         $dat = $dbh->selectall_arrayref("select index, count from foo");
+         $dat = $dbh->selectall_arrayref("select index, count from upsert_race_test");
          ## the sum used to be an indicator of the amount of work done, but
          ## now that the increment can be either positive or negative, it no longer is.
-         warn "sum is ", $dbh->selectrow_array("select sum(count) from foo"), "\n";
-         warn "count is ", $dbh->selectrow_array("select count(*) from foo"), "\n";
+         warn "sum is ", $dbh->selectrow_array("select sum(count) from upsert_race_test"), "\n";
+         warn "count is ", $dbh->selectrow_array("select count(*) from upsert_race_test"), "\n";
          # try to force it to walk the index to get to each row, so corrupt indexes are detected
          # (Without the "where index is not null", it won't use an index scan no matter what)
-         $dat2 = $dbh->selectall_arrayref("set enable_seqscan=off; select index, count from foo where index is not null");
+         $dat2 = $dbh->selectall_arrayref("set enable_seqscan=off; select index, count from upsert_race_test where index is not null");
        };
        last unless $@;
        warn $@;
@@ -166,7 +166,7 @@ if (@child_pipe) {
   foreach (@$dat) {
     $_->[0] == $dat2->[0][0] and $_->[1] == $dat2->[0][1] or die "seq scan doesn't match index scan  $_->[0] == $dat2->[0][0] and $_->[1] == $dat2->[0][1] $keep"; shift @$dat2;
     no warnings 'uninitialized';
-    warn "For $_->[0], $_->[1] != $count{$_->[0]}", exists $in_flight{$_->[0]}? " in flight":""  if $_->[1] != $count{$_->[0]};
+    warn "For tuple with index value $_->[0], $_->[1] != $count{$_->[0]}", exists $in_flight{$_->[0]}? " in flight":""  if $_->[1] != $count{$_->[0]};
     if ($_->[1] != $count{$_->[0]} and not exists $in_flight{$_->[0]} and defined $ARGV[2]) {
        #bring down the system now, before autovac destroys the evidence
        die;
@@ -194,17 +194,17 @@ eval {
   ## need to send the empty data to nstore_fd, or else fd_retieve fatals out.
   my $dbh = dbconnect();
   # $dbh->do("SET SESSION synchronous_commit = false");
-  my $sth=$dbh->prepare('insert into foo (index, count) values ($2,$1) on conflict (index)
-              update set count=TARGET.count + EXCLUDED.count returning foo.count, txid_current()');
-  my $del=$dbh->prepare('delete from foo where index=? and count=0');
-  #my $ins=$dbh->prepare('insert into foo (index, count) values (?,0)');
+  my $sth=$dbh->prepare('insert into upsert_race_test (index, count) values ($2,$1) on conflict (index)
+              update set count=TARGET.count + EXCLUDED.count returning upsert_race_test.count, txid_current()');
+  my $del=$dbh->prepare('delete from upsert_race_test where index=? and count=0');
+  #my $ins=$dbh->prepare('insert into upsert_race_test (index, count) values (?,0)');
   foreach (1..($ARGV[1]//1e6)) {
     $i=1+int rand($SIZE);
     my $d = rand() < 0.5 ? -1 : 1;
     my $count = $dbh->selectall_arrayref($sth,undef,$d,$i);
     @$count == 1 or die "update did not update 1 row: key $i updated '@$count'";
     $del->execute($i) if $count->[0][0]==0;
-    warn "xid of uninitialized count inserter was ", $count->[0][1] if ( not length $count->[0][0] );
+    warn "xid of uninitialized count inserter of index value $i was ", $count->[0][1] if ( not length $count->[0][0] );
     $h{$i}+=$d;
     undef $i;
     $abs++;
