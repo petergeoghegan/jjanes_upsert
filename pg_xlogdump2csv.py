@@ -46,6 +46,6 @@ for i in f:
     lsn = l[9]
     prev = l[11]
     desc = ""
-    for j in l[13:-1]:
+    for j in l[13:]:
         desc += j + " "
     writer.writerow([rmgr, len_rec, len_tot, tx, lsn, prev, desc])
