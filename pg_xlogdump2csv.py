@@ -38,7 +38,7 @@ f = open(sys.argv[1], 'r')
 
 writer = csv.writer(sys.stdout, quoting=csv.QUOTE_ALL)
 for i in f:
-    l = re.split('[ ,]+', i, flags=re.IGNORECASE)
+    l = re.split('[ \t\n\r\f\v,]+', i, flags=re.IGNORECASE)
     rmgr = l[1]
     len_rec = re.sub("[^0-9]", "", l[4])
     len_tot = l[5]
