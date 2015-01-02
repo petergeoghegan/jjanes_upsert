@@ -200,16 +200,22 @@ eval {
   my $sth=$dbh->prepare('insert into upsert_race_test (index, count) values ($2,$1) on conflict (index)
               update set count=TARGET.count + EXCLUDED.count
               where TARGET.index = EXCLUDED.index
-              returning upsert_race_test.count, txid_current()');
+              returning upsert_race_test.count');
   my $del=$dbh->prepare('delete from upsert_race_test where index=? and count=0');
+  my $getxid=$dbh->prepare('select txid_current()');
   #my $ins=$dbh->prepare('insert into upsert_race_test (index, count) values (?,0)');
   foreach (1..($ARGV[1]//1e6)) {
     $i=1+int rand($SIZE);
     my $d = rand() < 0.5 ? -1 : 1;
     my $count = $dbh->selectall_arrayref($sth,undef,$d,$i);
-    @$count == 1 or die "update did not update 1 row: key $i updated '@$count'";
+    my $xid;
+    if ((@$count != 1) || ( not length $count->[0][0])) {
+      $getxid->execute();
+      $xid = $getxid->fetchrow();
+      }
+    @$count == 1 or die "update did not update 1 row: key $i updated '@$count'. xid was: $xid";
     $del->execute($i) if $count->[0][0]==0;
-    warn "xid of uninitialized count inserter of index value $i was ", $count->[0][1] if ( not length $count->[0][0] );
+    warn "xid of uninitialized count inserter of index value $i was ", $xid if ( not length $count->[0][0] );
     $h{$i}+=$d;
     undef $i;
     $abs++;
