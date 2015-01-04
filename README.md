@@ -100,3 +100,53 @@ STATEMENT:  insert into foo (index, count) values ($2,$1) on conflict
                       update set count=TARGET.count + EXCLUDED.count
 returning foo.count
 ```
+
+Exclusion Constraints
+---------------------
+The need to test Value locking approach #2's implementation with exclusion
+constraints is important.  It's only used by INSERT with ON CONFLICT IGNORE,
+because the support only makes sense for that feature.  However, in principle
+exclusion constraints and unique indexes (B-Trees) should have equivalent value
+locking.
+
+We want to take advantage of this test suite for testing exclusion constraints,
+though, since in general it has proven effective.  If we assume that exclusion
+constraints are not used as a generalization of unique constraints, but rather
+are used only as an independent implementation of unique constraints, we can
+stress test that independent implementation, too.  INSERT ... ON CONFLICT
+UPDATE as used by the test suite has a lot more checks and balances than an
+IGNORE-based stress test could (e.g. we can be sure that the right tuple is
+updated by adding `WHERE EXCLUDED.index = TARGET.index ... RETURNING ... `, and
+checking that tuples are projected in the perl script).
+
+First, patch up the Value locking #2 patch, so parse analysis does not require
+that an inference specification is provided for the UPDATE variant, like this:
+
+```
+diff --git a/src/backend/parser/parse_clause.c b/src/backend/parser/parse_clause.c
+index e7c16fb..abd7741 100644
+--- a/src/backend/parser/parse_clause.c
++++ b/src/backend/parser/parse_clause.c
+@@ -2288,12 +2288,14 @@ transformConflictClause(ParseState *pstate, ConflictClause *confClause,
+ {
+        InferClause        *infer = confClause->infer;
+
++#if 0
+        if (confClause->specclause == SPEC_INSERT && !infer)
+                ereport(ERROR,
+                                (errcode(ERRCODE_SYNTAX_ERROR),
+                                 errmsg("ON CONFLICT with UPDATE must contain columns or expressi
+                                 parser_errposition(pstate,
+                                                                        exprLocation((Node *) con
++#endif
+
+        /* Raw grammar must ensure this invariant holds */
+        Assert(confClause->specclause != SPEC_INSERT ||
+```
+
+Build and install Postgres.  Make sure to build and install contrib/btree_gist,
+too.  This is used to make exclusion constraints implemented with GiST indexes
+that behave identically to unique constraints.
+
+It should now be possible to use the script "count_upsert_exclusion.pl" to
+stress test the implementation equivalently.
