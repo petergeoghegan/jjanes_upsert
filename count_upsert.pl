@@ -57,7 +57,7 @@ my $SIZE=10_000;
 
 ## centralize connections to one place, in case we want to point to a remote server or use a password
 sub dbconnect {
-  my $dbh = DBI->connect("dbi:Pg:;host=127.0.0.1", "", "", {AutoCommit => 1, RaiseError=>1, PrintError=>0});
+  my $dbh = DBI->connect("dbi:Pg:;host=127.0.0.1", "", "", {pg_server_prepare => 0, AutoCommit => 1, RaiseError=>1, PrintError=>0});
   return $dbh;
 };
 
@@ -71,8 +71,8 @@ while (1) {
          ## But if the table exists, don't pollute the log with errors
          $dbh->do(<<'END');
 drop table if exists upsert_race_test;
-create table upsert_race_test(index int, count int);
-create unique index on upsert_race_test(index);
+create table upsert_race_test(index int, count int) with (fillfactor=100);
+create unique index on upsert_race_test(index) with (fillfactor=100);
 END
     };
     my $dat = $dbh->selectall_arrayref("select index, count from upsert_race_test");
