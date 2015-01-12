@@ -21,6 +21,9 @@ contrib/pg_stat_statements (recommended)
 Details
 -------
 
+Note that the tool tends to be much more effective and revealing problems with
+fully optimized builds (-O2), without assertions enabled.
+
 Jeff Janes describes recreating a problem with approach #2 to value locking
 using the script directly. Instructions:
 
