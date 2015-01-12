@@ -13,11 +13,6 @@ Initial version by Jeff Janes, posted here:
 
 http://www.postgresql.org/message-id/CAMkU=1wFcwBjJmgsiq8SwQb76OOORGzQE2xaCSODkOfZbGN3SA@mail.gmail.com
 
-Dependencies
-------------
-contrib/pageinspect
-contrib/pg_stat_statements (recommended)
-
 Details
 -------
 
