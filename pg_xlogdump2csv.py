@@ -5,7 +5,7 @@ import re
 
 # Usage:
 #
-# $ cd $PGDATA
+# $ cd $PGDATA/pg_xlog
 # $ pg_xlogdump 000000010000000000000017 > dump.txt
 #
 # $ ./pg_xlogdump2csv.py dump.txt > 000000010000000000000017.csv
@@ -29,7 +29,7 @@ import re
 # );
 # CREATE TABLE
 #
-# postgres=# copy my_xlogdump from '/path/to/000000010000000000000017.csv' with (format csv);
+# postgres=# copy my_xlogdump from '/someplace/pgdata/pg_xlogdump/000000010000000000000017.csv' with (format csv);
 # COPY 150960
 #
 # postgres=# select * from my_xlogdump order by r_lsn;
