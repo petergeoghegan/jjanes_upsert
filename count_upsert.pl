@@ -8,7 +8,7 @@ use List::Util qw(shuffle);
 
 # Timestamps with warnings are useful
 $SIG{__WARN__} = sub { warn sprintf("[%s] ", scalar localtime), @_ };
-$SIG{__DIE__}  = sub { die  sprintf("[%s] ", scalar localtime), @_ };
+$SIG{__DIE__}  = sub { die  sprintf("[%s] ", scalar localtime), @_ , exit 1};
 
 ## This is a stress tester for PostgreSQL crash recovery.
 
@@ -178,7 +178,8 @@ if (@child_pipe) {
   ## If it has a count of 0 (or was in flight and so might truly have been zero), it may or may not have been deleted, either way is acceptable
   delete @count{keys %in_flight};
   warn "Left over in %count: @{[%count]}" if %count;
-  die if %count and defined $ARGV[2];
+  #die if %count and defined $ARGV[2];
+  die if %count;
   warn "normal exit at ", time() ," after $abs items processed";
   exit;
 };
