@@ -72,7 +72,7 @@ while (1) {
          $dbh->do(<<'END');
 drop table if exists upsert_race_test;
 create table upsert_race_test(index int, count int) with (fillfactor=100);
-create unique index on upsert_race_test(index) with (fillfactor=100);
+create unique index on upsert_race_test(index) with (fillfactor=90);
 END
     };
     my $dat = $dbh->selectall_arrayref("select index, count from upsert_race_test");
