@@ -206,7 +206,7 @@ eval {
   my $sth=$dbh->prepare('insert into upsert_race_test (index, count) values ($2,$1) on conflict
               update set count=TARGET.count + EXCLUDED.count
               where TARGET.index = EXCLUDED.index
-              returning upsert_race_test.count');
+              returning count');
   my $del=$dbh->prepare('delete from upsert_race_test where index=? and count=0');
   my $getxid=$dbh->prepare('select txid_current()');
   #my $ins=$dbh->prepare('insert into upsert_race_test (index, count) values (?,0)');
