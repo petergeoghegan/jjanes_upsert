@@ -148,3 +148,13 @@ that behave identically to unique constraints.
 
 It should now be possible to use the script "count_upsert_exclusion.pl" to
 stress test the implementation equivalently.
+
+Running the tests continually
+-----------------------------
+
+It is often desirable to stress the implementation of exclusion constraints and
+unique indexes at the same time, during refactoring.  The bash script
+"run_test.sh" can be used for this purpose.  It may also be desirable to test
+the correctness of exclusion constraints without "unprincipled deadlocks",
+using a subxact looping pattern that maximizes conflicts.  The bash script
+"subxact_run_test.sh" can be used for this purpose.
