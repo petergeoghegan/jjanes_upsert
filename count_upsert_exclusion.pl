@@ -172,7 +172,7 @@ if (@child_pipe) {
     $_->[0] == $dat2->[0][0] and $_->[1] == $dat2->[0][1] or die "seq scan doesn't match index scan  $_->[0] == $dat2->[0][0] and $_->[1] == $dat2->[0][1] $keep"; shift @$dat2;
     no warnings 'uninitialized';
     warn "For tuple with index value $_->[0], $_->[1] != $count{$_->[0]}", exists $in_flight{$_->[0]}? " in flight":""  if $_->[1] != $count{$_->[0]};
-    if ($_->[1] != $count{$_->[0]} and not exists $in_flight{$_->[0]} and defined $ARGV[2]) {
+    if ($_->[1] != $count{$_->[0]}) {
        #bring down the system now, before autovac destroys the evidence
        die;
     };
