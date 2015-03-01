@@ -168,13 +168,14 @@ if (@child_pipe) {
   my $keep = Dumper($dat,$dat2);
   @$dat=sort {$a->[0]<=>$b->[0]} @$dat;
   @$dat2=sort {$a->[0]<=>$b->[0]} @$dat2;
+  my $dodie=0;
   foreach (@$dat) {
     $_->[0] == $dat2->[0][0] and $_->[1] == $dat2->[0][1] or die "seq scan doesn't match index scan  $_->[0] == $dat2->[0][0] and $_->[1] == $dat2->[0][1] $keep"; shift @$dat2;
     no warnings 'uninitialized';
     warn "For tuple with index value $_->[0], $_->[1] != $count{$_->[0]}", exists $in_flight{$_->[0]}? " in flight":""  if $_->[1] != $count{$_->[0]};
     if ($_->[1] != $count{$_->[0]}) {
        #bring down the system now, before autovac destroys the evidence
-       die;
+       $dodie = 1;
     };
     delete $count{$_->[0]};
   };
@@ -185,6 +186,9 @@ if (@child_pipe) {
   warn "Left over in %count: @{[%count]}" if %count;
   #die if %count and defined $ARGV[2];
   die if %count;
+  if ($dodie != 0) {
+	  die
+  }
   warn "normal exit at ", time() ," after $abs items processed";
   exit;
 };
