@@ -3,7 +3,7 @@ jjanes_upsert
 
 Utility to stress-test PostgreSQL "UPSERT" patch:
 
-  https://commitfest.postgresql.org/action/patch_view?id=1564
+  https://commitfest.postgresql.org/4/35/
 
 Further details of patch:
 
