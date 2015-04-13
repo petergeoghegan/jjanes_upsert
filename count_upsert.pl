@@ -71,7 +71,8 @@ while (1) {
          ## But if the table exists, don't pollute the log with errors
          $dbh->do(<<'END');
 drop table if exists upsert_race_test;
-create table upsert_race_test(index int primary key, count int) with (fillfactor=100);
+create table upsert_race_test(index int primary key, filler text, count int) with (fillfactor=100);
+create or replace function random_characters() returns text as $$ select repeat(chr(ascii('a') + (random() * 25)::int)::text, greatest(1 , (random() * 100)::int)) $$ language sql;
 END
     };
     my $dat = $dbh->selectall_arrayref("select index, count from upsert_race_test");
@@ -83,7 +84,7 @@ END
       warn "table not correct size, ", scalar @$dat unless @$dat==0;
       $dbh->do("truncate upsert_race_test");
       %count=();
-      my $sth=$dbh->prepare("insert into upsert_race_test (index, count) values (?,0)");
+      my $sth=$dbh->prepare("insert into upsert_race_test (index, filler, count) values (?, random_characters(), 0)");
       $dbh->begin_work();
       $sth->execute($_) foreach 1..$SIZE;
       $dbh->commit();
@@ -201,8 +202,8 @@ eval {
 
   # Use of redundant WHERE clause provides additional assurances that the tuple
   # locked and updated is actually the correct one.
-  my $sth=$dbh->prepare('insert into upsert_race_test (index, count) values ($2,$1) on conflict (index)
-              update set count=TARGET.count + EXCLUDED.count
+  my $sth=$dbh->prepare('insert into upsert_race_test (index, filler, count) values ($2, random_characters(), $1) on conflict (index)
+              update set count=TARGET.count + EXCLUDED.count, filler = EXCLUDED.filler
               where TARGET.index = EXCLUDED.index
               returning count');
   my $del=$dbh->prepare('delete from upsert_race_test where index=? and count=0');
