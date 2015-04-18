@@ -15,24 +15,17 @@ import re
 # "Heap","7","53,","1869820,","0/170525B0,","0/17052568,","LOCK xid 1869820: off 64 LOCK_ONLY EXCL_LOCK KEYS_UPDATED , blkref #0: rel 1663/16471/16472 blk "
 # "Heap","14","71,","1869820,","0/170525E8,","0/170525B0,","HOT_UPDATE off 64 xmax 1869820KEYS_UPDATED ; new off 176 xmax 1869820, blkref #0: rel 1663/16471/16472 blk "
 #
-# From psql:
+# Load table definition:
 #
-# postgres=# create table my_xlogdump
-# (
-#     rmgr text not null,
-#     len_rec numeric not null,
-#     len_tot numeric not null,
-#     tx xid not null,
-#     r_lsn pg_lsn,
-#     prev_lsn pg_lsn,
-#     descr text not null
-# );
-# CREATE TABLE
+# $ psql -f xlogdump.sql
 #
-# postgres=# copy my_xlogdump from '/someplace/pgdata/pg_xlogdump/000000010000000000000017.csv' with (format csv);
+# From interactive psql session:
+#
+# (Before trigger fills in relation name as convenience here -- assumes WAL
+# records originated in same database as that used to load records):
+#
+# postgres=# copy xlogdump_records (rmgr, len_rec, len_tot, tx, r_lsn, prev_lsn, descr) from '/someplace/pgdata/pg_xlogdump/000000010000000000000017.csv' with (format csv);
 # COPY 150960
-#
-# postgres=# select * from my_xlogdump order by r_lsn;
 
 f = open(sys.argv[1], 'r')
 
