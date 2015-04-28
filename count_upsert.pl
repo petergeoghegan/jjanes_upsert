@@ -203,7 +203,7 @@ eval {
   # Use of redundant WHERE clause provides additional assurances that the tuple
   # locked and updated is actually the correct one.
   my $sth=$dbh->prepare('insert into upsert_race_test (index, filler, count) values ($2, random_characters(), $1) on conflict (index)
-              update set count=TARGET.count + EXCLUDED.count, filler = EXCLUDED.filler
+              do update set count=TARGET.count + EXCLUDED.count, filler = EXCLUDED.filler
               where TARGET.index = EXCLUDED.index
               returning count');
   my $del=$dbh->prepare('delete from upsert_race_test where index=? and count=0');

@@ -102,18 +102,18 @@ returning foo.count
 Exclusion Constraints
 ---------------------
 The need to test Value locking approach #2's implementation with exclusion
-constraints is important.  It's only used by INSERT with ON CONFLICT IGNORE,
-because the support only makes sense for that feature.  However, in principle
-exclusion constraints and unique indexes (B-Trees) should have equivalent value
-locking.
+constraints is important.  It's only used by INSERT with ON CONFLICT DO
+NOTHING, because the support only makes sense for that feature.  However, in
+principle exclusion constraints and unique indexes (B-Trees) should have
+equivalent value locking.
 
 We want to take advantage of this test suite for testing exclusion constraints,
 though, since in general it has proven effective.  If we assume that exclusion
 constraints are not used as a generalization of unique constraints, but rather
 are used only as an independent implementation of unique constraints, we can
-stress test that independent implementation, too.  INSERT ... ON CONFLICT
-UPDATE as used by the test suite has a lot more checks and balances than an
-IGNORE-based stress test could (e.g. we can be sure that the right tuple is
+stress test that independent implementation, too.  INSERT ... ON CONFLICT DO
+UPDATE as used by the test suite has a lot more checks and balances than an DO
+NOTHING based stress test could (e.g. we can be sure that the right tuple is
 updated by adding `WHERE EXCLUDED.index = TARGET.index ... RETURNING ... `, and
 checking that tuples are projected in the perl script).
 
