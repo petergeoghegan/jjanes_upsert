@@ -73,6 +73,8 @@ while (1) {
 drop table if exists upsert_race_test;
 create table upsert_race_test(index int primary key, filler text, count int) with (fillfactor=100);
 create or replace function random_characters() returns text as $$ select repeat(chr(ascii('a') + (random() * 25)::int)::text, greatest(1 , (random() * 100)::int)) $$ language sql;
+--create index on upsert_race_test(filler);
+--create or replace function random_characters() returns text as $$ select md5(clock_timestamp()::text) || md5(clock_timestamp()::text) || md5(clock_timestamp()::text) || md5(clock_timestamp()::text) || md5(clock_timestamp()::text) || md5(clock_timestamp()::text) ||md5(clock_timestamp()::text) ||md5(clock_timestamp()::text) ||md5(clock_timestamp()::text) ||md5(clock_timestamp()::text) ||md5(clock_timestamp()::text) ||md5(clock_timestamp()::text) ||md5(clock_timestamp()::text) ||md5(clock_timestamp()::text) ||md5(clock_timestamp()::text) ||md5(clock_timestamp()::text) ||md5(clock_timestamp()::text) ||md5(clock_timestamp()::text) ||md5(clock_timestamp()::text) ||md5(clock_timestamp()::text) ||md5(clock_timestamp()::text) ||md5(clock_timestamp()::text) ||md5(clock_timestamp()::text) ||md5(clock_timestamp()::text) ||md5(clock_timestamp()::text) ||md5(clock_timestamp()::text) ||md5(clock_timestamp()::text) ||md5(clock_timestamp()::text) ||md5(clock_timestamp()::text) ||md5(clock_timestamp()::text) ||md5(clock_timestamp()::text) ||md5(clock_timestamp()::text) ||md5(clock_timestamp()::text) ||md5(clock_timestamp()::text) ||md5(clock_timestamp()::text) ||md5(clock_timestamp()::text) ||md5(clock_timestamp()::text) ||md5(clock_timestamp()::text) ||md5(clock_timestamp()::text) ||md5(clock_timestamp()::text) ||md5(clock_timestamp()::text) ||md5(clock_timestamp()::text) ||md5(clock_timestamp()::text) ||md5(clock_timestamp()::text) ||md5(clock_timestamp()::text) ||md5(clock_timestamp()::text) ||md5(clock_timestamp()::text) ||md5(clock_timestamp()::text) ||md5(clock_timestamp()::text) ||md5(clock_timestamp()::text) ||md5(clock_timestamp()::text) ||md5(clock_timestamp()::text) ||                                         md5(clock_timestamp()::text) ||       md5(clock_timestamp()::text) || md5(clock_timestamp()::text) $$ language sql;
 END
     };
     my $dat = $dbh->selectall_arrayref("select index, count from upsert_race_test");
@@ -203,7 +205,7 @@ eval {
   # Use of redundant WHERE clause provides additional assurances that the tuple
   # locked and updated is actually the correct one.
   my $sth=$dbh->prepare('insert into upsert_race_test as target (index, filler, count) values ($2, random_characters(), $1) on conflict (index)
-              do update set count=TARGET.count + EXCLUDED.count, filler = EXCLUDED.filler
+              do update set index=EXCLUDED.index, count=TARGET.count + EXCLUDED.count, filler = EXCLUDED.filler
               where TARGET.index = EXCLUDED.index
               returning count');
   my $del=$dbh->prepare('delete from upsert_race_test where index=? and count=0');
