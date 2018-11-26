@@ -146,11 +146,13 @@ if (@child_pipe) {
          ## detect wrap around shutdown (actually not shutdown, but read-onlyness) and bail out
          ## need to detect before $dat is set, or else it won't trigger a Perl fatal error.
          $dbh->do("create temporary table aldjf (x serial)");
+         $dbh->do("create extension if not exists amcheck;");
          $dat = $dbh->selectall_arrayref("select index, count from upsert_race_test");
          ## the sum used to be an indicator of the amount of work done, but
          ## now that the increment can be either positive or negative, it no longer is.
          warn "sum is ", $dbh->selectrow_array("select sum(count) from upsert_race_test"), "\n";
          warn "count is ", $dbh->selectrow_array("select count(*) from upsert_race_test"), "\n";
+         warn "amcheck run ", $dbh->selectrow_array("select bt_index_parent_check('upsert_race_test_pkey', true);"), "\n";
          # try to force it to walk the index to get to each row, so corrupt indexes are detected
          # (Without the "where index is not null", it won't use an index scan no matter what)
          $dat2 = $dbh->selectall_arrayref("set enable_seqscan=off; select index, count from upsert_race_test where index is not null");
